@@ -8,11 +8,15 @@ from tkinter import messagebox
 import itertools
 import random
 
+import time
+
 root = tkinter.Tk()
 root.title("TicTacToe")
 root.geometry("300x295")
 root.configure(background='#523d3d')
 bg = {"bg": "#553839"}
+wincountx = 0
+wincounto = 0
 
 # Creates a global list of the spots on the board and returns that list
 def spotInit(size):
@@ -32,6 +36,17 @@ def spotUpdate(x, y, spots, turn, condition="none"):
         spots[x][y] = "O"
     return spots
 
+def winCount(wincountx1=0, wincounto1=0, code="none"):
+    global wincountx
+    global wincounto
+    wincountx += wincountx1
+    wincounto += wincounto1
+    if code == "returnx":
+        return wincountx
+    if code == "returno":
+        return wincounto
+
+
 def adjustRes():
     root.geometry("")
 
@@ -45,7 +60,7 @@ def clearWindow():
 
 # Will direct the user to either singleplayer or multiplayer, and decides if user is ready to begin
 def isReady(boardsize, gamemode):
-    if boardsize > 15:
+    if boardsize > 100:
         print("Bruh")
     elif boardsize % 2 != 1:
         print("Bruh")
@@ -75,29 +90,29 @@ def mainMenu():
     e1.pack(fill="x", pady="8")
 
 # Displays the board given turn, size, spots/board list and gamemode
-def displaygameBoard(turn, size=3, spots=[], gamemode="multiplayer"):
+def displaygameBoard(turn, size=3, spots=[], gamemode="multiplayer", wincountx=0, wincounto=0):
     clearWindow()
     adjustRes()
 
     size = size ** 2
     count = 1
     buttonList = [[] for i in range(int(math.sqrt(size)))]
-    gamestatstext = "Player 1 Wins: " + str(0) + "\nPlayer 2 Wins: " + str(0)
+    gamestatstext = "Player 1 Wins: " + str(winCount(wincountx, wincounto, code="returnx")) + "\nPlayer 2 Wins: " + str(winCount(wincountx, wincounto, code="returnx"))
     gamestats = Frame(root, width=100, height=50)
     gamestats.grid(columnspan=int(size), sticky="S")
 
     if gamemode == "singleplayer" and turn == "O":
-        print("here")
-        print(f"{gamemode, turn}")
-
+        if checkWin(int(math.sqrt(size)), spots) == "tie":
+            if messagebox.askyesno("Continue?", "It was a tie!\nDo you want to play again?"):
+                displaygameBoard("X", int(math.sqrt(size)), spotInit(int(math.sqrt(size))), gamemode)
+            else:
+                exit()
         a = random.randint(0, int(math.sqrt(size) - 1))
         b = random.randint(0, int(math.sqrt(size) - 1))
-        print(a, b)
         if isspotAvailable(a, b, spots):
             click(a, b, size, getSpots(), turn, gamemode)
         else:
             displaygameBoard(turn, int(math.sqrt(size)), spots, gamemode)
-
 
     if turn == "X":
         statuslabel = "Player One's Turn"
@@ -118,17 +133,24 @@ def displaygameBoard(turn, size=3, spots=[], gamemode="multiplayer"):
 # Runs if is a button is clicked on the board
 # Checks if a spot is available and if so will display the board and update the spots
 def click(x, y, size, spots, turn, gamemode):
+    print(x, y, size, spots, turn, gamemode)
+    if isspotAvailable(x, y, spots):
+        if turn == "X":
+            displaygameBoard("O", (math.sqrt(size)), spotUpdate(x, y, spots, "X"), gamemode)
+        else:
+            displaygameBoard("X", (math.sqrt(size)), spotUpdate(x, y, spots, "O"), gamemode)
+    print(x, y, size, spots, turn, gamemode)
     if checkWin(int(math.sqrt(size)), spots) == "Xwin":
         if messagebox.askyesno("Continue?", "Player one won!\nDo you want to play again?"):
-            displaygameBoard("X", int(math.sqrt(size)), spotInit(int(math.sqrt(size))), gamemode)
+            displaygameBoard("X", int(math.sqrt(size)), spotInit(int(math.sqrt(size))), gamemode, wincountx=1, wincounto=0)
         else:
             exit()
-    elif checkWin(int(math.sqrt(size)), spots) == "Owin":
+    if checkWin(int(math.sqrt(size)), spots) == "Owin":
         if messagebox.askyesno("Continue?", "Player two won!\nDo you want to play again?"):
-            displaygameBoard("X", int(math.sqrt(size)), spotInit(int(math.sqrt(size))), gamemode)
+            displaygameBoard("X", int(math.sqrt(size)), spotInit(int(math.sqrt(size))), gamemode, wincountx=0, wincounto=1)
         else:
             exit()
-    elif checkWin(int(math.sqrt(size)), spots) == "tie":
+    if checkWin(int(math.sqrt(size)), spots) == "tie":
         if messagebox.askyesno("Continue?", "It was a tie!\nDo you want to play again?"):
             displaygameBoard("X", int(math.sqrt(size)), spotInit(int(math.sqrt(size))), gamemode)
         else:
@@ -175,19 +197,20 @@ def checkWin(size, spots):
             if dg == letter * size:
                 return letter + "win"
 
-    ## Checks if tie
-    #count = 0
-    #spts = ""
-    #variables = [i for i in range(size ** 2)]
-    #for row in spots:                                           # Not working
-    #    for char in row:
-    #        spts += char
-    #for i in variables:
-    #    if i not in "".join(spts):
-    #        count += 1
-    #        if count == size ** 2:
-    #            return True
-#
+    # Checks if tie
+    count = 0
+    spts = ""
+    variables = [str(p) for p in range(1, (size ** 2) + 1)]
+    for row in spots:
+        for char in row:
+            spts += str(char)
+            newspts = "".join(spts)
+    for l in variables:
+        if str(l) not in newspts:
+            count += 1
+            if count == size ** 2:
+                return "tie"
+
 
 
 # Checks if spot is taken by either X or O and will return False if taken and True if not taken
